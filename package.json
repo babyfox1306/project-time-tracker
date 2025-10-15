@@ -1,0 +1,101 @@
+{
+  "name": "project-time-tracker",
+  "displayName": "Project Time Tracker",
+  "description": "Offline time tracker for freelancers and developers in VS Code",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onCommand:timeTracker.start"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "timeTracker.start",
+        "title": "Start Time Tracking",
+        "category": "Time Tracker"
+      },
+      {
+        "command": "timeTracker.pause",
+        "title": "Pause Time Tracking",
+        "category": "Time Tracker"
+      },
+      {
+        "command": "timeTracker.resume",
+        "title": "Resume Time Tracking",
+        "category": "Time Tracker"
+      },
+      {
+        "command": "timeTracker.export",
+        "title": "Export Time Report",
+        "category": "Time Tracker"
+      },
+      {
+        "command": "timeTracker.reset",
+        "title": "Reset Today's Data",
+        "category": "Time Tracker"
+      },
+      {
+        "command": "timeTracker.viewStats",
+        "title": "View Detailed Stats",
+        "category": "Time Tracker"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "timeTrackerView",
+          "name": "Time Tracker"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Time Tracker",
+      "properties": {
+        "timeTracker.autoStart": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically start tracking when workspace opens"
+        },
+        "timeTracker.pauseOnInactive": {
+          "type": "boolean",
+          "default": true,
+          "description": "Pause tracking when VS Code loses focus"
+        },
+        "timeTracker.minActiveSeconds": {
+          "type": "number",
+          "default": 5,
+          "description": "Minimum seconds on a file to count as active"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.74.0",
+    "@types/node": "16.x",
+    "typescript": "^4.9.4"
+  },
+  "publisher": "project-time-tracker",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/project-time-tracker.git"
+  },
+  "keywords": [
+    "time-tracking",
+    "productivity",
+    "freelancer",
+    "offline",
+    "timer"
+  ]
+}
