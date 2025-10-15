@@ -2,7 +2,7 @@
   "name": "codeclock-time-tracker",
   "displayName": "CodeClock Time Tracker",
   "description": "Offline time tracker for freelancers and developers in VS Code",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "icon": "media/logo.png",
   "engines": {
     "vscode": "^1.74.0"
