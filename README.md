@@ -1,6 +1,6 @@
 # CodeClock Time Tracker
 
-![CodeClock Time Tracker Logo](media/logo.png)
+![CodeClock Time Tracker Logo](https://github.com/babyfox1306/project-time-tracker/raw/HEAD/media/logo.png)
 
 A VS Code extension for freelancers and developers to track time spent on projects offline. No cloud required - all data stays on your machine.
 
