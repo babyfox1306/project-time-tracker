@@ -1,8 +1,9 @@
 {
-  "name": "project-time-tracker",
-  "displayName": "Project Time Tracker",
+  "name": "codeclock-time-tracker",
+  "displayName": "CodeClock Time Tracker",
   "description": "Offline time tracker for freelancers and developers in VS Code",
-  "version": "0.0.1",
+  "version": "0.0.3",
+  "icon": "media/logo.png",
   "engines": {
     "vscode": "^1.74.0"
   },
@@ -10,8 +11,7 @@
     "Other"
   ],
   "activationEvents": [
-    "onStartupFinished",
-    "onCommand:timeTracker.start"
+    "onStartupFinished"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -51,7 +51,8 @@
       "explorer": [
         {
           "id": "timeTrackerView",
-          "name": "Time Tracker"
+          "name": "Time Tracker",
+          "icon": "media/logo.png"
         }
       ]
     },
@@ -86,7 +87,7 @@
     "@types/node": "16.x",
     "typescript": "^4.9.4"
   },
-  "publisher": "project-time-tracker",
+  "publisher": "CodeClock",
   "repository": {
     "type": "git",
     "url": "https://github.com/babyfox1306/project-time-tracker.git"
