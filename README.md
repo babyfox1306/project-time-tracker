@@ -32,9 +32,12 @@ A VS Code extension for freelancers and developers to track time spent on projec
 ## Installation
 
 ### From VS Code Marketplace
+**Direct Link**: [Install CodeClock Time Tracker](https://marketplace.visualstudio.com/items?itemName=CodeClock.codeclock-time-tracker)
+
+**Or manually:**
 1. Open VS Code
 2. Go to Extensions (Ctrl+Shift+X)
-3. Search for "Project Time Tracker"
+3. Search for "CodeClock Time Tracker"
 4. Click Install
 
 ### Manual Installation
