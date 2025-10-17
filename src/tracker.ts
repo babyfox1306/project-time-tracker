@@ -12,6 +12,8 @@ export class TimeTracker {
     private updateInterval: any = null;
     private statusBarItem: vscode.StatusBarItem;
     private onUpdateCallback: (() => void) | null = null;
+    private breakReminderShown: boolean = false;
+    private sessionStartTime: number = 0;
 
     constructor(storage: StorageManager) {
         this.storage = storage;
@@ -67,6 +69,8 @@ export class TimeTracker {
 
         this.isTracking = true;
         this.isPaused = false;
+        this.sessionStartTime = Date.now();
+        this.breakReminderShown = false;
         
         // Start tracking current file if editor is open
         const activeEditor = vscode.window.activeTextEditor;
@@ -276,6 +280,9 @@ export class TimeTracker {
                 await this.saveCurrentFileTime();
                 this.updateStatusBar();
                 
+                // Check for break reminder (2 hours = 7200 seconds)
+                this.checkBreakReminder();
+                
                 // Trigger UI update callback
                 if (this.onUpdateCallback) {
                     this.onUpdateCallback();
@@ -291,6 +298,59 @@ export class TimeTracker {
         if (this.updateInterval) {
             clearInterval(this.updateInterval);
             this.updateInterval = null;
+        }
+    }
+
+    /**
+     * Check if break reminder should be shown (after configured hours of continuous work)
+     */
+    private checkBreakReminder(): void {
+        if (this.breakReminderShown) {
+            return;
+        }
+
+        // Check if break reminder is enabled
+        const isEnabled = getConfigValue('breakReminderEnabled', true);
+        if (!isEnabled) {
+            return;
+        }
+
+        const now = Date.now();
+        const sessionDuration = Math.floor((now - this.sessionStartTime) / 1000);
+        const reminderHours = getConfigValue('breakReminderHours', 2);
+        const reminderSeconds = reminderHours * 60 * 60;
+
+        if (sessionDuration >= reminderSeconds) {
+            this.showBreakReminder();
+            this.breakReminderShown = true;
+        }
+    }
+
+    /**
+     * Show cute break reminder notification
+     */
+    private async showBreakReminder(): Promise<void> {
+        const messages = [
+            "💝 Làm việc 2h rồi, đi bộ lấy chút nước nhé! 💝",
+            "🌸 Anh em làm việc 2h rồi, nghỉ ngơi chút đi! 🌸",
+            "☕ Đã 2h coding rồi, uống cà phê đi bạn! ☕",
+            "🌿 Làm việc 2h liền, đi dạo chút cho khỏe! 🌿",
+            "💖 Code 2h rồi, nghỉ ngơi để não thông minh hơn! 💖"
+        ];
+
+        const randomMessage = messages[Math.floor(Math.random() * messages.length)];
+        
+        const result = await vscode.window.showInformationMessage(
+            randomMessage,
+            'Nghỉ ngơi 5 phút',
+            'Tiếp tục làm',
+            'Pause tracking'
+        );
+
+        if (result === 'Nghỉ ngơi 5 phút') {
+            vscode.window.showInformationMessage('💝 Tuyệt vời! Nghỉ ngơi để làm việc hiệu quả hơn! 💝');
+        } else if (result === 'Pause tracking') {
+            this.pause();
         }
     }
 

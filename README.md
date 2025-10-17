@@ -24,6 +24,12 @@ A VS Code extension for freelancers and developers to track time spent on projec
 - Export today's data, date ranges, or all historical data
 - Detailed file and language breakdowns
 
+### 💝 **Break Reminders**
+- Cute notifications after 2 hours of continuous work
+- Configurable reminder timing
+- Encourages healthy work habits
+- Multiple friendly message variations
+
 ### 🔒 **Privacy First**
 - 100% offline - no data sent anywhere
 - All data stored locally using VS Code's built-in storage

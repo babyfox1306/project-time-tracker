@@ -2,7 +2,7 @@
   "name": "codeclock-time-tracker",
   "displayName": "CodeClock Time Tracker",
   "description": "Offline time tracker for freelancers and developers in VS Code",
-  "version": "0.0.4",
+  "version": "0.0.8",
   "icon": "media/logo.png",
   "engines": {
     "vscode": "^1.74.0"
@@ -73,6 +73,16 @@
           "type": "number",
           "default": 5,
           "description": "Minimum seconds on a file to count as active"
+        },
+        "timeTracker.breakReminderEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show break reminder after 2 hours of continuous work"
+        },
+        "timeTracker.breakReminderHours": {
+          "type": "number",
+          "default": 2,
+          "description": "Hours of continuous work before showing break reminder"
         }
       }
     }
