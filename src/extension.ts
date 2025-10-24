@@ -53,6 +53,16 @@ export function activate(context: vscode.ExtensionContext) {
 
         vscode.commands.registerCommand('timeTracker.viewStats', () => {
             showDetailedStats();
+        }),
+
+        vscode.commands.registerCommand('timeTracker.startPomodoro', () => {
+            tracker.startPomodoro();
+            treeProvider.refresh();
+        }),
+
+        vscode.commands.registerCommand('timeTracker.skipBreak', () => {
+            tracker.skipBreak();
+            treeProvider.refresh();
         })
     ];
 

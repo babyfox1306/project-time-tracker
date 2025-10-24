@@ -1,9 +1,13 @@
 import * as vscode from 'vscode';
 import { StorageManager, TimeEntry } from './storage';
 import { getLanguageId, getRelativeFilePath, getConfigValue, isVSCodeActive } from './utils';
+import { PomodoroTimer } from './pomodoro';
+import { GitTracker } from './gitTracker';
 
 export class TimeTracker {
     private storage: StorageManager;
+    private pomodoroTimer: PomodoroTimer;
+    private gitTracker: GitTracker;
     private isTracking: boolean = false;
     private isPaused: boolean = false;
     private currentFile: string | null = null;
@@ -14,12 +18,34 @@ export class TimeTracker {
     private onUpdateCallback: (() => void) | null = null;
     private breakReminderShown: boolean = false;
     private sessionStartTime: number = 0;
+    private lastStatusBarUpdate: number = 0;
+    private statusBarUpdateThrottleMs: number = 1000; // Update status bar max once per second
 
     constructor(storage: StorageManager) {
         this.storage = storage;
+        this.pomodoroTimer = new PomodoroTimer(storage);
+        this.gitTracker = new GitTracker();
         this.statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
         this.statusBarItem.command = 'timeTracker.pause';
         this.setupEventListeners();
+        this.setupPomodoroCallbacks();
+    }
+
+    /**
+     * Setup Pomodoro timer callbacks
+     */
+    private setupPomodoroCallbacks(): void {
+        this.pomodoroTimer.setUpdateCallback((state) => {
+            this.updateStatusBar();
+            if (this.onUpdateCallback) {
+                this.onUpdateCallback();
+            }
+        });
+
+        this.pomodoroTimer.setSessionCompleteCallback((isWorkSession) => {
+            // Optional: Add session completion tracking
+            console.log(`Pomodoro ${isWorkSession ? 'work' : 'break'} session completed`);
+        });
     }
 
     /**
@@ -200,6 +226,41 @@ export class TimeTracker {
     }
 
     /**
+     * Start Pomodoro timer
+     */
+    public startPomodoro(): void {
+        this.pomodoroTimer.start();
+    }
+
+    /**
+     * Skip current Pomodoro break
+     */
+    public skipBreak(): void {
+        this.pomodoroTimer.skipBreak();
+    }
+
+    /**
+     * Get Pomodoro state
+     */
+    public getPomodoroState() {
+        return this.pomodoroTimer.getState();
+    }
+
+    /**
+     * Get Git stats for today
+     */
+    public getGitStats() {
+        return this.storage.getGitStats();
+    }
+
+    /**
+     * Get current Git info
+     */
+    public async getCurrentGitInfo() {
+        return await this.gitTracker.getCurrentGitInfo();
+    }
+
+    /**
      * Set callback for UI updates
      */
     public setUpdateCallback(callback: () => void): void {
@@ -263,6 +324,20 @@ export class TimeTracker {
         if (timeSpent >= minActiveSeconds) {
             const relativePath = getRelativeFilePath(this.currentFile);
             await this.storage.updateFileTime(relativePath, this.currentLanguage, timeSpent);
+            
+            // Update Git stats if Git info has changed
+            const gitInfoChanged = await this.gitTracker.hasGitInfoChanged();
+            if (gitInfoChanged) {
+                const gitInfo = await this.gitTracker.getCurrentGitInfo();
+                if (gitInfo.isGitRepo) {
+                    await this.storage.updateGitStats(
+                        gitInfo.branch,
+                        gitInfo.commit,
+                        gitInfo.commitTimestamp,
+                        timeSpent
+                    );
+                }
+            }
         }
 
         // Reset file start time
@@ -355,20 +430,39 @@ export class TimeTracker {
     }
 
     /**
-     * Update status bar
+     * Update status bar with throttling
      */
     private updateStatusBar(): void {
+        const now = Date.now();
+        if (now - this.lastStatusBarUpdate < this.statusBarUpdateThrottleMs) {
+            return; // Skip update if too soon
+        }
+        this.lastStatusBarUpdate = now;
+
         const entry = this.getTodayEntry();
         const totalTime = formatTime(entry.totalSeconds);
+        const pomodoroState = this.pomodoroTimer.getState();
+        
+        let statusText = '';
+        
+        // Add Pomodoro timer if active
+        if (pomodoroState.isActive) {
+            const pomodoroTime = PomodoroTimer.formatTime(pomodoroState.timeRemaining);
+            const pomodoroIcon = pomodoroState.isWorkSession ? '🍅' : '☕';
+            statusText += `${pomodoroIcon} ${pomodoroTime} | `;
+        }
+        
+        // Add time tracking
+        statusText += `⏱️ ${totalTime}`;
         
         if (this.isTracking) {
             if (this.isPaused) {
-                this.statusBarItem.text = `⏸️ ${totalTime} (Paused)`;
+                statusText += ' (Paused)';
                 this.statusBarItem.command = 'timeTracker.resume';
             } else {
-                this.statusBarItem.text = `⏱️ ${totalTime}`;
                 this.statusBarItem.command = 'timeTracker.pause';
             }
+            this.statusBarItem.text = statusText;
             this.statusBarItem.show();
         } else {
             this.statusBarItem.hide();
@@ -380,6 +474,7 @@ export class TimeTracker {
      */
     public dispose(): void {
         this.stop();
+        this.pomodoroTimer.dispose();
         this.statusBarItem.dispose();
     }
 }

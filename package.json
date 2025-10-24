@@ -1,8 +1,8 @@
 {
   "name": "codeclock-time-tracker",
   "displayName": "CodeClock Time Tracker",
-  "description": "Offline time tracker for freelancers and developers in VS Code",
-  "version": "0.0.8",
+  "description": "Offline time tracker with Pomodoro timer and Git integration for VS Code developers",
+  "version": "0.1.0",
   "icon": "media/logo.png",
   "engines": {
     "vscode": "^1.74.0"
@@ -45,6 +45,16 @@
         "command": "timeTracker.viewStats",
         "title": "View Detailed Stats",
         "category": "Time Tracker"
+      },
+      {
+        "command": "timeTracker.startPomodoro",
+        "title": "Start Pomodoro",
+        "category": "Time Tracker"
+      },
+      {
+        "command": "timeTracker.skipBreak",
+        "title": "Skip Break",
+        "category": "Time Tracker"
       }
     ],
     "views": {
@@ -83,6 +93,21 @@
           "type": "number",
           "default": 2,
           "description": "Hours of continuous work before showing break reminder"
+        },
+        "timeTracker.pomodoroEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Pomodoro timer integration"
+        },
+        "timeTracker.pomodoroWorkMinutes": {
+          "type": "number",
+          "default": 25,
+          "description": "Duration of work sessions in minutes"
+        },
+        "timeTracker.pomodoroBreakMinutes": {
+          "type": "number",
+          "default": 5,
+          "description": "Duration of break sessions in minutes"
         }
       }
     }
@@ -107,6 +132,17 @@
     "productivity",
     "freelancer",
     "offline",
-    "timer"
+    "timer",
+    "pomodoro",
+    "focus timer",
+    "developer productivity",
+    "git tracking",
+    "workflow management",
+    "coding timer",
+    "project management",
+    "vscode extension",
+    "team workflow",
+    "offline time tracking",
+    "vscode productivity"
   ]
 }

@@ -15,6 +15,19 @@ export interface TimeEntry {
     languages: {
         [languageId: string]: number; // Total seconds per language
     };
+    pomodoroStats?: {
+        totalWorkSessions: number;
+        totalBreakSessions: number;
+        lastSessionType: 'work' | 'break' | null;
+        lastSessionEnd: number;
+    };
+    gitStats?: {
+        currentBranch: string;
+        lastCommit: string;
+        commitTimestamp: number;
+        branchTime: { [branchName: string]: number }; // Time spent per branch
+        commitCount: number;
+    };
 }
 
 export interface TimeData {
@@ -90,7 +103,20 @@ export class StorageManager {
             projectName: projectName,
             totalSeconds: 0,
             files: {},
-            languages: {}
+            languages: {},
+            pomodoroStats: {
+                totalWorkSessions: 0,
+                totalBreakSessions: 0,
+                lastSessionType: null,
+                lastSessionEnd: 0
+            },
+            gitStats: {
+                currentBranch: '',
+                lastCommit: '',
+                commitTimestamp: 0,
+                branchTime: {},
+                commitCount: 0
+            }
         };
     }
 
@@ -248,5 +274,111 @@ export class StorageManager {
             totalTime,
             averageTimePerDay
         };
+    }
+
+    /**
+     * Update Pomodoro stats for today
+     */
+    public async updatePomodoroStats(workSessions: number, breakSessions: number, lastSessionType: 'work' | 'break' | null): Promise<void> {
+        const entry = this.getOrCreateTodayEntry();
+        
+        if (!entry.pomodoroStats) {
+            entry.pomodoroStats = {
+                totalWorkSessions: 0,
+                totalBreakSessions: 0,
+                lastSessionType: null,
+                lastSessionEnd: 0
+            };
+        }
+        
+        entry.pomodoroStats.totalWorkSessions = workSessions;
+        entry.pomodoroStats.totalBreakSessions = breakSessions;
+        entry.pomodoroStats.lastSessionType = lastSessionType;
+        entry.pomodoroStats.lastSessionEnd = Date.now();
+        
+        await this.saveEntry(entry);
+    }
+
+    /**
+     * Get Pomodoro stats for today
+     */
+    public getPomodoroStats(): { totalWorkSessions: number; totalBreakSessions: number; lastSessionType: 'work' | 'break' | null } {
+        const entry = this.getTodayEntry();
+        
+        if (!entry || !entry.pomodoroStats) {
+            return {
+                totalWorkSessions: 0,
+                totalBreakSessions: 0,
+                lastSessionType: null
+            };
+        }
+        
+        return {
+            totalWorkSessions: entry.pomodoroStats.totalWorkSessions,
+            totalBreakSessions: entry.pomodoroStats.totalBreakSessions,
+            lastSessionType: entry.pomodoroStats.lastSessionType
+        };
+    }
+
+    /**
+     * Update Git stats for today
+     */
+    public async updateGitStats(branch: string, commit: string, commitTimestamp: number, additionalSeconds: number): Promise<void> {
+        const entry = this.getOrCreateTodayEntry();
+        
+        if (!entry.gitStats) {
+            entry.gitStats = {
+                currentBranch: '',
+                lastCommit: '',
+                commitTimestamp: 0,
+                branchTime: {},
+                commitCount: 0
+            };
+        }
+        
+        // Update current branch
+        entry.gitStats.currentBranch = branch;
+        
+        // Update commit info if it's a new commit
+        if (commit !== entry.gitStats.lastCommit) {
+            entry.gitStats.lastCommit = commit;
+            entry.gitStats.commitTimestamp = commitTimestamp;
+            entry.gitStats.commitCount++;
+        }
+        
+        // Update branch time
+        if (!entry.gitStats.branchTime[branch]) {
+            entry.gitStats.branchTime[branch] = 0;
+        }
+        entry.gitStats.branchTime[branch] += additionalSeconds;
+        
+        await this.saveEntry(entry);
+    }
+
+    /**
+     * Get Git stats for today
+     */
+    public getGitStats(): { currentBranch: string; lastCommit: string; commitTimestamp: number; branchTime: { [branchName: string]: number }; commitCount: number } | null {
+        const entry = this.getTodayEntry();
+        
+        if (!entry || !entry.gitStats) {
+            return null;
+        }
+        
+        return {
+            currentBranch: entry.gitStats.currentBranch,
+            lastCommit: entry.gitStats.lastCommit,
+            commitTimestamp: entry.gitStats.commitTimestamp,
+            branchTime: entry.gitStats.branchTime,
+            commitCount: entry.gitStats.commitCount
+        };
+    }
+
+    /**
+     * Get Git stats for a specific branch
+     */
+    public getBranchTime(branchName: string): number {
+        const gitStats = this.getGitStats();
+        return gitStats?.branchTime[branchName] || 0;
     }
 }

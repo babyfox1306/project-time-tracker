@@ -2,9 +2,21 @@
 
 ![CodeClock Time Tracker Logo](https://github.com/babyfox1306/project-time-tracker/raw/HEAD/media/logo.png)
 
-A VS Code extension for freelancers and developers to track time spent on projects offline. No cloud required - all data stays on your machine.
+[![Installs](https://img.shields.io/visual-studio-marketplace/i/CodeClock.codeclock-time-tracker)](https://marketplace.visualstudio.com/items?itemName=CodeClock.codeclock-time-tracker)
+[![Stars](https://img.shields.io/github/stars/babyfox1306/project-time-tracker?style=social)](https://github.com/babyfox1306/project-time-tracker)
+[![Vietnamese](https://img.shields.io/badge/lang-vi-green.svg)](https://github.com/babyfox1306/project-time-tracker)
+[![Offline](https://img.shields.io/badge/privacy-100%25%20offline-purple.svg)](https://github.com/babyfox1306/project-time-tracker)
+
+A VS Code extension for developers and teams to track time spent on projects offline. No cloud required - all data stays on your machine.
 
 ## Features
+
+### 🍅 **Pomodoro Timer Integration**
+- Built-in Pomodoro timer (25min work / 5min break)
+- Status bar shows both Pomodoro and total time: `🍅 24:35 | ⏱️ 2h 15m`
+- Desktop notifications for work/break transitions
+- Configurable work and break durations
+- Syncs with time tracking for focused productivity
 
 ### ⏱️ **Automatic Time Tracking**
 - Starts tracking when you open a workspace
@@ -17,6 +29,7 @@ A VS Code extension for freelancers and developers to track time spent on projec
 - Top files by time spent
 - Breakdown by programming language
 - Current project information
+- Pomodoro status indicator
 
 ### 📈 **Export Reports**
 - **CSV format** - Import into Excel for client billing
@@ -35,6 +48,31 @@ A VS Code extension for freelancers and developers to track time spent on projec
 - All data stored locally using VS Code's built-in storage
 - No external dependencies or network calls
 
+## 🌿 Git Integration (v0.1.0)
+Track time by Git branches and commits for better project context and team billing.
+- ⏱️ **Time per branch** - See how long you spend on each feature branch
+- 📝 **Commit tracking** - Link commits to time spent
+- 📊 **Branch analytics** - Time breakdown by branch in sidebar
+- 🔍 **Repository detection** - Auto-detect Git repos and track accordingly
+
+## Why CodeClock?
+
+| Feature | CodeClock | WakaTime | RescueTime |
+|---------|-----------|----------|------------|
+| **Offline First** | ✅ 100% Local | ❌ Cloud Required | ❌ Cloud Required |
+| **Pomodoro Timer** | ✅ Built-in | ❌ No | ❌ No |
+| **Git Integration** | ✅ Coming Soon | ❌ No | ❌ No |
+| **Privacy** | ✅ No Data Sent | ❌ Data Uploaded | ❌ Data Uploaded |
+| **VS Code Native** | ✅ Perfect Integration | ⚠️ Limited | ❌ No |
+| **Free Features** | ✅ All Core Features | ⚠️ Limited | ⚠️ Limited |
+| **Multi-Project Support** | ✅ Coming Soon | ⚠️ Limited | ⚠️ Limited |
+| **Team Collaboration** | ✅ Planned | ⚠️ Paid Only | ⚠️ Paid Only |
+
+**Perfect for**: Developers who value privacy, want offline-first tools, and need Pomodoro + time tracking in one extension.
+
+## 🇻🇳 Vietnamese Developer Community
+CodeClock is built with Vietnamese developers in mind. Full Vietnamese localization coming in Week 2!
+
 ## Installation
 
 ### From VS Code Marketplace
@@ -45,6 +83,10 @@ A VS Code extension for freelancers and developers to track time spent on projec
 2. Go to Extensions (Ctrl+Shift+X)
 3. Search for "CodeClock Time Tracker"
 4. Click Install
+
+### From Open VSX Registry
+For VSCodium and open-source VS Code builds:
+[Install on Open VSX](https://open-vsx.org/extension/CodeClock/codeclock-time-tracker)
 
 ### Manual Installation
 1. Download the `.vsix` file from releases
@@ -63,9 +105,16 @@ A VS Code extension for freelancers and developers to track time spent on projec
 ### Commands
 Access via Command Palette (Ctrl+Shift+P) or the sidebar:
 
+**Time Tracking:**
 - `Time Tracker: Start Time Tracking` - Begin tracking
 - `Time Tracker: Pause Time Tracking` - Pause current session
 - `Time Tracker: Resume Time Tracking` - Resume paused session
+
+**Pomodoro Timer:**
+- `Time Tracker: Start Pomodoro` - Start Pomodoro session (25min work)
+- `Time Tracker: Skip Break` - Skip current break period
+
+**Reports & Data:**
 - `Time Tracker: Export Time Report` - Generate CSV/Markdown reports
 - `Time Tracker: Reset Today's Data` - Clear today's tracking data
 - `Time Tracker: View Detailed Stats` - Open detailed statistics
@@ -73,6 +122,7 @@ Access via Command Palette (Ctrl+Shift+P) or the sidebar:
 ### Sidebar Panel
 The Time Tracker panel shows:
 - **Current Status** - Tracking state and total time
+- **Pomodoro Timer** - Current Pomodoro session status
 - **Project Details** - Current project and time breakdown
 - **Top Files** - Files with most time spent
 - **By Language** - Time grouped by programming language
@@ -80,8 +130,9 @@ The Time Tracker panel shows:
 
 ### Status Bar
 When tracking is active, you'll see:
-- `⏱️ 2h 34m` - Total time tracked today
+- `🍅 24:35 | ⏱️ 2h 34m` - Pomodoro timer and total time tracked today
 - Click to pause/resume tracking
+- Pomodoro notifications for work/break transitions
 
 ## Configuration
 
@@ -98,6 +149,18 @@ Access settings via `File > Preferences > Settings` and search for "timeTracker"
 ### `timeTracker.minActiveSeconds`
 - **Default:** `5`
 - **Description:** Minimum seconds on a file to count as active time
+
+### `timeTracker.pomodoroEnabled`
+- **Default:** `true`
+- **Description:** Enable Pomodoro timer integration
+
+### `timeTracker.pomodoroWorkMinutes`
+- **Default:** `25`
+- **Description:** Duration of work sessions in minutes
+
+### `timeTracker.pomodoroBreakMinutes`
+- **Default:** `5`
+- **Description:** Duration of break sessions in minutes
 
 ## Export Formats
 

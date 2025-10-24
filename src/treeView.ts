@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { StorageManager, TimeEntry } from './storage';
 import { TimeTracker } from './tracker';
 import { formatTime, getRelativeFilePath, getTopFiles, getTopLanguages, truncatePath } from './utils';
+import { PomodoroTimer } from './pomodoro';
 
 export class TimeTrackerTreeProvider implements vscode.TreeDataProvider<TimeTrackerItem> {
     private _onDidChangeTreeData: vscode.EventEmitter<TimeTrackerItem | undefined | null | void> = new vscode.EventEmitter<TimeTrackerItem | undefined | null | void>();
@@ -44,6 +45,9 @@ export class TimeTrackerTreeProvider implements vscode.TreeDataProvider<TimeTrac
         } else if (element.contextValue === 'status') {
             // Status section - show current session info
             return this.getStatusItems();
+        } else if (element.contextValue === 'pomodoro') {
+            // Pomodoro section - show Pomodoro timer info
+            return this.getPomodoroItems();
         } else if (element.contextValue === 'project') {
             // Project section - show project details
             return this.getProjectItems();
@@ -53,6 +57,12 @@ export class TimeTrackerTreeProvider implements vscode.TreeDataProvider<TimeTrac
         } else if (element.contextValue === 'languages') {
             // Languages section - show language breakdown
             return this.getLanguageItems();
+        } else if (element.contextValue === 'git') {
+            // Git section - show Git information
+            return this.getGitItems();
+        } else if (element.contextValue === 'git-branches') {
+            // Git branches section - show branch time breakdown
+            return this.getGitBranchItems();
         } else if (element.contextValue === 'actions') {
             // Actions section - show action buttons
             return this.getActionItems();
@@ -75,6 +85,20 @@ export class TimeTrackerTreeProvider implements vscode.TreeDataProvider<TimeTrac
         );
         statusItem.tooltip = 'Current tracking status and session info';
         items.push(statusItem);
+
+        // Pomodoro item
+        const pomodoroState = this.tracker.getPomodoroState();
+        const pomodoroItem = new TimeTrackerItem(
+            pomodoroState.isActive 
+                ? `🍅 Pomodoro (${pomodoroState.isWorkSession ? 'Work' : 'Break'})`
+                : '🍅 Pomodoro Timer',
+            vscode.TreeItemCollapsibleState.Collapsed,
+            'pomodoro'
+        );
+        pomodoroItem.tooltip = pomodoroState.isActive 
+            ? `Current Pomodoro session: ${pomodoroState.isWorkSession ? 'Work' : 'Break'}`
+            : 'Start Pomodoro timer for focused work sessions';
+        items.push(pomodoroItem);
 
         // Project item
         const projectItem = new TimeTrackerItem(
@@ -145,6 +169,76 @@ export class TimeTrackerTreeProvider implements vscode.TreeDataProvider<TimeTrac
     }
 
     /**
+     * Get Pomodoro items
+     */
+    private async getPomodoroItems(): Promise<TimeTrackerItem[]> {
+        const items: TimeTrackerItem[] = [];
+        const pomodoroState = this.tracker.getPomodoroState();
+
+        if (pomodoroState.isActive) {
+            // Current session info
+            const sessionType = pomodoroState.isWorkSession ? 'Work' : 'Break';
+            const timeRemaining = PomodoroTimer.formatTime(pomodoroState.timeRemaining);
+            
+            const sessionItem = new TimeTrackerItem(
+                `${pomodoroState.isWorkSession ? '🍅' : '☕'} ${sessionType} Session - ${timeRemaining}`,
+                vscode.TreeItemCollapsibleState.None,
+                'pomodoro-session'
+            );
+            sessionItem.tooltip = `Current ${sessionType.toLowerCase()} session: ${timeRemaining} remaining`;
+            items.push(sessionItem);
+
+            // Session stats
+            const statsItem = new TimeTrackerItem(
+                `📊 Sessions: ${pomodoroState.totalWorkSessions} work, ${pomodoroState.totalBreakSessions} break`,
+                vscode.TreeItemCollapsibleState.None,
+                'pomodoro-stats'
+            );
+            statsItem.tooltip = 'Total Pomodoro sessions completed today';
+            items.push(statsItem);
+
+            // Skip break action (only during break)
+            if (!pomodoroState.isWorkSession) {
+                const skipItem = new TimeTrackerItem(
+                    '⏭️ Skip Break',
+                    vscode.TreeItemCollapsibleState.None,
+                    'skip-break'
+                );
+                skipItem.command = {
+                    command: 'timeTracker.skipBreak',
+                    title: 'Skip Break'
+                };
+                skipItem.tooltip = 'Skip current break and start work session';
+                items.push(skipItem);
+            }
+        } else {
+            // Start Pomodoro action
+            const startItem = new TimeTrackerItem(
+                '▶️ Start Pomodoro',
+                vscode.TreeItemCollapsibleState.None,
+                'start-pomodoro'
+            );
+            startItem.command = {
+                command: 'timeTracker.startPomodoro',
+                title: 'Start Pomodoro'
+            };
+            startItem.tooltip = 'Start a 25-minute Pomodoro work session';
+            items.push(startItem);
+
+            // Pomodoro info
+            const infoItem = new TimeTrackerItem(
+                'ℹ️ Pomodoro Technique: 25min work, 5min break',
+                vscode.TreeItemCollapsibleState.None,
+                'pomodoro-info'
+            );
+            infoItem.tooltip = 'Pomodoro Technique helps maintain focus and productivity';
+            items.push(infoItem);
+        }
+
+        return items;
+    }
+
+    /**
      * Get project items
      */
     private async getProjectItems(): Promise<TimeTrackerItem[]> {
@@ -191,6 +285,18 @@ export class TimeTrackerTreeProvider implements vscode.TreeDataProvider<TimeTrac
             items.push(languagesItem);
         }
 
+        // Git section
+        const gitStats = this.tracker.getGitStats();
+        if (gitStats && gitStats.currentBranch) {
+            const gitItem = new TimeTrackerItem(
+                '🌿 Git Info',
+                vscode.TreeItemCollapsibleState.Collapsed,
+                'git'
+            );
+            gitItem.tooltip = 'Git branch and commit information';
+            items.push(gitItem);
+        }
+
         return items;
     }
 
@@ -233,6 +339,95 @@ export class TimeTrackerTreeProvider implements vscode.TreeDataProvider<TimeTrac
             langItem.tooltip = `${lang.language}: ${formatTime(lang.seconds)}`;
             langItem.iconPath = this.getLanguageIcon(lang.language);
             items.push(langItem);
+        }
+
+        return items;
+    }
+
+    /**
+     * Get Git items
+     */
+    private async getGitItems(): Promise<TimeTrackerItem[]> {
+        const items: TimeTrackerItem[] = [];
+        const gitStats = this.tracker.getGitStats();
+
+        if (!gitStats) {
+            const noGitItem = new TimeTrackerItem(
+                '❌ No Git repository detected',
+                vscode.TreeItemCollapsibleState.None,
+                'no-git'
+            );
+            noGitItem.tooltip = 'Open a Git repository to see Git tracking information';
+            items.push(noGitItem);
+            return items;
+        }
+
+        // Current branch
+        const branchItem = new TimeTrackerItem(
+            `🌿 Branch: ${gitStats.currentBranch}`,
+            vscode.TreeItemCollapsibleState.None,
+            'git-branch'
+        );
+        branchItem.tooltip = `Current branch: ${gitStats.currentBranch}`;
+        items.push(branchItem);
+
+        // Last commit
+        if (gitStats.lastCommit) {
+            const commitItem = new TimeTrackerItem(
+                `📝 Last commit: ${gitStats.lastCommit}`,
+                vscode.TreeItemCollapsibleState.None,
+                'git-commit'
+            );
+            commitItem.tooltip = `Last commit: ${gitStats.lastCommit}`;
+            items.push(commitItem);
+        }
+
+        // Commit count
+        const commitCountItem = new TimeTrackerItem(
+            `🔢 Commits today: ${gitStats.commitCount}`,
+            vscode.TreeItemCollapsibleState.None,
+            'git-commits'
+        );
+        commitCountItem.tooltip = `Total commits tracked today: ${gitStats.commitCount}`;
+        items.push(commitCountItem);
+
+        // Branch time breakdown
+        const branchTimes = Object.entries(gitStats.branchTime);
+        if (branchTimes.length > 0) {
+            const branchTimeItem = new TimeTrackerItem(
+                '⏱️ Time by Branch',
+                vscode.TreeItemCollapsibleState.Collapsed,
+                'git-branches'
+            );
+            branchTimeItem.tooltip = 'Time spent on each branch';
+            items.push(branchTimeItem);
+        }
+
+        return items;
+    }
+
+    /**
+     * Get Git branch items
+     */
+    private async getGitBranchItems(): Promise<TimeTrackerItem[]> {
+        const items: TimeTrackerItem[] = [];
+        const gitStats = this.tracker.getGitStats();
+
+        if (!gitStats) {
+            return items;
+        }
+
+        const branchTimes = Object.entries(gitStats.branchTime)
+            .sort(([, a], [, b]) => b - a); // Sort by time descending
+
+        for (const [branchName, seconds] of branchTimes) {
+            const branchItem = new TimeTrackerItem(
+                `🌿 ${branchName} - ${formatTime(seconds)}`,
+                vscode.TreeItemCollapsibleState.None,
+                'git-branch-item'
+            );
+            branchItem.tooltip = `Branch: ${branchName}\nTime: ${formatTime(seconds)}`;
+            items.push(branchItem);
         }
 
         return items;
