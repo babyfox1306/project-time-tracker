@@ -32,10 +32,12 @@ A VS Code extension for developers and teams to track time spent on projects off
 - Pomodoro status indicator
 
 ### 📈 **Export Reports**
-- **CSV format** - Import into Excel for client billing
-- **Markdown format** - Share with team or documentation
+- **CSV format** - Import into Excel for client billing (includes Git data: Branch, Commit, Commit Timestamp)
+- **Markdown format** - Share with team or documentation (includes Git Analytics section)
+- **JSON format** - Full metadata export with commit history and analytics (NEW in v0.1.0)
 - Export today's data, date ranges, or all historical data
 - Detailed file and language breakdowns
+- Git commit timeline and branch analytics in exports
 
 ### 💝 **Break Reminders**
 - Cute notifications after 2 hours of continuous work
@@ -48,12 +50,18 @@ A VS Code extension for developers and teams to track time spent on projects off
 - All data stored locally using VS Code's built-in storage
 - No external dependencies or network calls
 
-## 🌿 Git Integration (v0.1.0)
+## 🌿 Git Integration & Analytics (v0.1.0)
 Track time by Git branches and commits for better project context and team billing.
 - ⏱️ **Time per branch** - See how long you spend on each feature branch
-- 📝 **Commit tracking** - Link commits to time spent
+- 📝 **Commit tracking** - Link commits to time spent with timestamps
 - 📊 **Branch analytics** - Time breakdown by branch in sidebar
 - 🔍 **Repository detection** - Auto-detect Git repos and track accordingly
+- 📈 **Git Analytics** - Advanced commit timeline and productivity insights
+  - View commit timeline with time spent per commit
+  - Branch switching frequency analysis
+  - Productivity metrics (average time per commit, most active branch)
+  - Time between commits visualization
+  - Date range selection for historical analysis
 
 ## Why CodeClock?
 
@@ -61,7 +69,7 @@ Track time by Git branches and commits for better project context and team billi
 |---------|-----------|----------|------------|
 | **Offline First** | ✅ 100% Local | ❌ Cloud Required | ❌ Cloud Required |
 | **Pomodoro Timer** | ✅ Built-in | ❌ No | ❌ No |
-| **Git Integration** | ✅ Coming Soon | ❌ No | ❌ No |
+| **Git Integration** | ✅ Full Analytics | ❌ No | ❌ No |
 | **Privacy** | ✅ No Data Sent | ❌ Data Uploaded | ❌ Data Uploaded |
 | **VS Code Native** | ✅ Perfect Integration | ⚠️ Limited | ❌ No |
 | **Free Features** | ✅ All Core Features | ⚠️ Limited | ⚠️ Limited |
@@ -115,9 +123,10 @@ Access via Command Palette (Ctrl+Shift+P) or the sidebar:
 - `Time Tracker: Skip Break` - Skip current break period
 
 **Reports & Data:**
-- `Time Tracker: Export Time Report` - Generate CSV/Markdown reports
+- `Time Tracker: Export Time Report` - Generate CSV/Markdown/JSON reports
 - `Time Tracker: Reset Today's Data` - Clear today's tracking data
 - `Time Tracker: View Detailed Stats` - Open detailed statistics
+- `Time Tracker: View Git Analytics` - View Git commit timeline and productivity metrics (NEW)
 
 ### Sidebar Panel
 The Time Tracker panel shows:
@@ -126,6 +135,10 @@ The Time Tracker panel shows:
 - **Project Details** - Current project and time breakdown
 - **Top Files** - Files with most time spent
 - **By Language** - Time grouped by programming language
+- **Git Info** - Current branch, commits, and branch time breakdown
+  - Branch switching indicator (when branch changed multiple times)
+  - Commit timeline summary
+  - View Git Analytics action
 - **Actions** - Quick access to commands
 
 ### Status Bar
@@ -133,6 +146,44 @@ When tracking is active, you'll see:
 - `🍅 24:35 | ⏱️ 2h 34m` - Pomodoro timer and total time tracked today
 - Click to pause/resume tracking
 - Pomodoro notifications for work/break transitions
+
+### Git Analytics (NEW in v0.1.0)
+View detailed Git analytics and commit timeline:
+
+1. **Access Git Analytics:**
+   - Command Palette: `Time Tracker: View Git Analytics`
+   - Or click "View Git Analytics" in the Git Info section of sidebar
+
+2. **Select Date Range:**
+   - Today - View today's commits
+   - This Week - Last 7 days
+   - This Month - Last 30 days
+   - All Time - All historical data
+   - Custom Range - Specify start and end dates
+
+3. **Analytics Report Includes:**
+   - **Productivity Statistics:**
+     - Total commits
+     - Average time per commit
+     - Most active branch
+     - Branch switch count
+     - Average time between commits
+   - **Branch Switching:**
+     - Total switches
+     - Switch history with timestamps
+     - Average time between switches
+   - **Commit Timeline:**
+     - Chronological list of all commits
+     - Commit hash, branch, timestamp
+     - Time spent on each commit
+     - Time between commits
+
+4. **Git Info in Sidebar:**
+   - Current branch and last commit
+   - Commit count for today
+   - Branch switching indicator (if switched multiple times)
+   - Time breakdown by branch (expandable)
+   - Commit timeline summary
 
 ## Configuration
 
@@ -165,15 +216,15 @@ Access settings via `File > Preferences > Settings` and search for "timeTracker"
 ## Export Formats
 
 ### CSV Export
-Perfect for Excel and data analysis:
+Perfect for Excel and data analysis (includes Git data):
 ```csv
-Date,Project,File,Language,Time (seconds),Time (formatted)
-2025-01-14,my-project,src/app.ts,TypeScript,2700,45m
-2025-01-14,my-project,src/utils.ts,TypeScript,1800,30m
+Date,Project,File,Language,Time (seconds),Time (formatted),Branch,Commit,Commit Timestamp
+2025-01-14,my-project,src/app.ts,TypeScript,2700,45m,main,a1b2c3d4,2025-01-14T10:30:00Z
+2025-01-14,my-project,src/utils.ts,TypeScript,1800,30m,feature/auth,e5f6g7h8,2025-01-14T11:15:00Z
 ```
 
 ### Markdown Export
-Great for documentation and sharing:
+Great for documentation and sharing (includes Git Analytics):
 ```markdown
 # Time Tracking Report
 **Project:** my-project  
@@ -191,6 +242,59 @@ Great for documentation and sharing:
 |----------|------|
 | TypeScript | 1h 15m |
 | JSON | 15m |
+
+## Git Analytics
+**Current Branch:** main
+**Last Commit:** a1b2c3d4
+**Commit Count:** 5
+
+### Time by Branch
+| Branch | Time |
+|--------|------|
+| main | 1h 30m |
+| feature/auth | 1h 4m |
+
+### Commit Timeline
+| Commit | Branch | Timestamp | Time Spent |
+|---------|--------|-----------|------------|
+| a1b2c3d4 | main | 2025-01-14 10:30 | 45m |
+| e5f6g7h8 | feature/auth | 2025-01-14 11:15 | 30m |
+```
+
+### JSON Export (NEW in v0.1.0)
+Complete metadata export for programmatic access:
+```json
+{
+  "exportDate": "2025-01-14T12:00:00Z",
+  "totalEntries": 1,
+  "entries": [
+    {
+      "date": "2025-01-14",
+      "projectName": "my-project",
+      "totalSeconds": 5400,
+      "gitStats": {
+        "currentBranch": "main",
+        "lastCommit": "a1b2c3d4",
+        "commitHistory": [
+          {
+            "commitHash": "a1b2c3d4",
+            "timestamp": "2025-01-14T10:30:00Z",
+            "branch": "main",
+            "timeSpent": 2700,
+            "timeBetweenCommits": null
+          }
+        ]
+      }
+    }
+  ],
+  "gitAnalytics": {
+    "productivityStats": {
+      "totalCommits": 5,
+      "averageTimePerCommit": 1080,
+      "mostActiveBranch": "main"
+    }
+  }
+}
 ```
 
 ## Privacy & Data Storage
@@ -234,6 +338,15 @@ A: Yes! CSV exports are perfect for importing into Excel or billing systems.
 **Q: Does it track time when VS Code is minimized?**
 A: By default, tracking pauses when VS Code loses focus. You can disable this in settings.
 
+**Q: How does Git Analytics work?**
+A: The extension automatically tracks your Git branch and commits as you work. Use the "View Git Analytics" command to see commit timeline, branch switching patterns, and productivity metrics for any date range.
+
+**Q: Can I export Git data?**
+A: Yes! All export formats (CSV, Markdown, JSON) now include Git information. JSON export includes full commit history and analytics.
+
+**Q: Does Git tracking work with all Git workflows?**
+A: Yes, it works with any Git repository. The extension uses VS Code's built-in Git API to detect branches and commits automatically.
+
 ## Contributing
 
 Contributions welcome! Please see the [GitHub repository](https://github.com/babyfox1306/project-time-tracker) for:
@@ -248,6 +361,22 @@ MIT License - see LICENSE file for details.
 
 ## Changelog
 
+### v0.1.0 (Current)
+- 🌿 Git Integration with branch and commit tracking
+- 📈 Git Analytics: Commit timeline, branch switching analysis, productivity metrics
+- 📊 Enhanced exports: CSV/Markdown with Git data + NEW JSON export
+- 🔄 Branch switching indicators and commit timeline in sidebar
+- View Git Analytics command with date range selection
+
+### v0.0.9
+- Professional logo design
+- Package optimization
+
+### v0.0.8
+- 🍅 Pomodoro timer integration
+- Status bar integration
+- Desktop notifications
+
 ### v0.0.1
 - Initial release
 - Automatic time tracking
@@ -255,6 +384,8 @@ MIT License - see LICENSE file for details.
 - CSV and Markdown export
 - Offline-first architecture
 - Configurable settings
+
+See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
 
 ---
 

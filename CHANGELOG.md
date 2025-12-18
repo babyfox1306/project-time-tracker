@@ -2,6 +2,20 @@
 
 All notable changes to the "Project Time Tracker" extension will be documented in this file.
 
+## [0.1.1] - 2025-01-21
+
+### Improved
+- 📚 Enhanced documentation with comprehensive Git Analytics usage guide
+- 📖 Updated README with detailed export format examples (CSV/Markdown/JSON)
+- 📝 Improved CHANGELOG with complete feature descriptions
+- 🔍 Added FAQ section for Git Analytics features
+- ✨ Better user guidance for Git Analytics command usage
+
+### Fixed
+- Documentation consistency across all files
+- Export format examples now include Git data
+- Git Analytics section properly documented in README
+
 ## [0.1.0] - 2025-10-21
 
 ### Added
@@ -12,21 +26,37 @@ All notable changes to the "Project Time Tracker" extension will be documented i
 - Git stats section showing current branch, last commit, and commit count
 - Time breakdown by branch with expandable view
 - Git repository detection and validation
+- 📈 **Git Analytics**: Advanced commit timeline and productivity metrics
+  - Commit timeline visualization with time spent per commit
+  - Branch switching frequency analysis
+  - Productivity metrics (average time per commit, most active branch)
+  - Time between commits calculation
+  - View Git Analytics command with date range selection (Today, Week, Month, All Time, Custom)
+- 📊 **Enhanced Exports**:
+  - CSV export now includes Git columns (Branch, Commit, Commit Timestamp)
+  - Markdown export includes Git Analytics section with branch breakdown and commit timeline
+  - **NEW**: JSON export with full Git metadata including commit history and analytics
+- 🔄 Branch switching indicator in sidebar (shows when branch changed multiple times)
+- 📝 Commit timeline summary in Git section
 
 ### Improved
 - Enhanced sidebar with Git information section
 - Better time tracking accuracy with Git context
 - Automatic Git state monitoring and updates
 - Professional Git workflow integration
+- Export reports now include comprehensive Git data
+- Better analytics visualization in markdown reports
 
 ### Technical
 - New `GitTracker` class for VSCode Git API integration
-- Extended `TimeEntry` interface with Git metadata
+- New `GitAnalytics` class for commit timeline and productivity analysis
+- Extended `TimeEntry` interface with Git metadata and commit history
 - Git stats storage and retrieval methods
 - Branch switching detection and time allocation
+- Commit history tracking with timestamps and time spent
+- Historical Git data aggregation across date ranges
 
 ### Coming Soon
-- Git analytics and commit timeline visualization (Week 3-4)
 - PDF export with Git metadata (Week 5-6)
 - Vietnamese localization (Week 7-8)
 

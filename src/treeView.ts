@@ -403,6 +403,42 @@ export class TimeTrackerTreeProvider implements vscode.TreeDataProvider<TimeTrac
             items.push(branchTimeItem);
         }
 
+        // Branch switching indicator
+        const branchSwitchCount = this.getBranchSwitchCountToday();
+        if (branchSwitchCount > 1) {
+            const switchIndicator = new TimeTrackerItem(
+                `🔄 Branch Switches: ${branchSwitchCount}`,
+                vscode.TreeItemCollapsibleState.None,
+                'git-switch-indicator'
+            );
+            switchIndicator.tooltip = `Branch switched ${branchSwitchCount} times today`;
+            items.push(switchIndicator);
+        }
+
+        // Commit timeline summary
+        if (gitStats.commitHistory && gitStats.commitHistory.length > 0) {
+            const timelineItem = new TimeTrackerItem(
+                `📊 Commits: ${gitStats.commitHistory.length}`,
+                vscode.TreeItemCollapsibleState.None,
+                'git-commit-timeline'
+            );
+            timelineItem.tooltip = `Total commits tracked: ${gitStats.commitHistory.length}`;
+            items.push(timelineItem);
+        }
+
+        // View Git Analytics action
+        const analyticsItem = new TimeTrackerItem(
+            '📈 View Git Analytics',
+            vscode.TreeItemCollapsibleState.None,
+            'git-analytics'
+        );
+        analyticsItem.command = {
+            command: 'timeTracker.viewGitStats',
+            title: 'View Git Analytics'
+        };
+        analyticsItem.tooltip = 'View detailed Git analytics and commit timeline';
+        items.push(analyticsItem);
+
         return items;
     }
 
@@ -506,6 +542,30 @@ export class TimeTrackerTreeProvider implements vscode.TreeDataProvider<TimeTrac
         items.push(resetItem);
 
         return items;
+    }
+
+    /**
+     * Get branch switch count for today
+     */
+    private getBranchSwitchCountToday(): number {
+        const todayEntry = this.tracker.getTodayEntry();
+        if (!todayEntry.gitStats || !todayEntry.gitStats.commitHistory) {
+            return 0;
+        }
+
+        const commitHistory = todayEntry.gitStats.commitHistory;
+        if (commitHistory.length < 2) {
+            return 0;
+        }
+
+        let switchCount = 0;
+        for (let i = 1; i < commitHistory.length; i++) {
+            if (commitHistory[i - 1].branch !== commitHistory[i].branch) {
+                switchCount++;
+            }
+        }
+
+        return switchCount;
     }
 
     /**

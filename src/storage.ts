@@ -27,6 +27,13 @@ export interface TimeEntry {
         commitTimestamp: number;
         branchTime: { [branchName: string]: number }; // Time spent per branch
         commitCount: number;
+        commitHistory?: Array<{
+            commitHash: string;
+            timestamp: number;
+            branch: string;
+            timeSpent: number;
+            timeBetweenCommits?: number;
+        }>;
     };
 }
 
@@ -115,7 +122,8 @@ export class StorageManager {
                 lastCommit: '',
                 commitTimestamp: 0,
                 branchTime: {},
-                commitCount: 0
+                commitCount: 0,
+                commitHistory: []
             }
         };
     }
@@ -332,8 +340,14 @@ export class StorageManager {
                 lastCommit: '',
                 commitTimestamp: 0,
                 branchTime: {},
-                commitCount: 0
+                commitCount: 0,
+                commitHistory: []
             };
+        }
+        
+        // Initialize commit history if not present
+        if (!entry.gitStats.commitHistory) {
+            entry.gitStats.commitHistory = [];
         }
         
         // Update current branch
@@ -341,9 +355,33 @@ export class StorageManager {
         
         // Update commit info if it's a new commit
         if (commit !== entry.gitStats.lastCommit) {
+            // Calculate time between commits
+            let timeBetweenCommits: number | undefined = undefined;
+            if (entry.gitStats.commitHistory.length > 0) {
+                const lastCommit = entry.gitStats.commitHistory[entry.gitStats.commitHistory.length - 1];
+                timeBetweenCommits = commitTimestamp - lastCommit.timestamp;
+            }
+            
+            // Add to commit history
+            entry.gitStats.commitHistory.push({
+                commitHash: commit,
+                timestamp: commitTimestamp,
+                branch: branch,
+                timeSpent: additionalSeconds,
+                timeBetweenCommits: timeBetweenCommits
+            });
+            
             entry.gitStats.lastCommit = commit;
             entry.gitStats.commitTimestamp = commitTimestamp;
             entry.gitStats.commitCount++;
+        } else {
+            // Update time spent for current commit
+            if (entry.gitStats.commitHistory.length > 0) {
+                const lastCommit = entry.gitStats.commitHistory[entry.gitStats.commitHistory.length - 1];
+                if (lastCommit.commitHash === commit) {
+                    lastCommit.timeSpent += additionalSeconds;
+                }
+            }
         }
         
         // Update branch time
@@ -358,7 +396,7 @@ export class StorageManager {
     /**
      * Get Git stats for today
      */
-    public getGitStats(): { currentBranch: string; lastCommit: string; commitTimestamp: number; branchTime: { [branchName: string]: number }; commitCount: number } | null {
+    public getGitStats(): { currentBranch: string; lastCommit: string; commitTimestamp: number; branchTime: { [branchName: string]: number }; commitCount: number; commitHistory?: Array<{ commitHash: string; timestamp: number; branch: string; timeSpent: number; timeBetweenCommits?: number }> } | null {
         const entry = this.getTodayEntry();
         
         if (!entry || !entry.gitStats) {
@@ -370,7 +408,8 @@ export class StorageManager {
             lastCommit: entry.gitStats.lastCommit,
             commitTimestamp: entry.gitStats.commitTimestamp,
             branchTime: entry.gitStats.branchTime,
-            commitCount: entry.gitStats.commitCount
+            commitCount: entry.gitStats.commitCount,
+            commitHistory: entry.gitStats.commitHistory
         };
     }
 
@@ -380,5 +419,77 @@ export class StorageManager {
     public getBranchTime(branchName: string): number {
         const gitStats = this.getGitStats();
         return gitStats?.branchTime[branchName] || 0;
+    }
+
+    /**
+     * Get aggregated Git stats for a date range
+     */
+    public getGitStatsForDateRange(startDate: string, endDate: string): {
+        totalCommits: number;
+        branches: { [branchName: string]: number };
+        commitHistory: Array<{
+            commitHash: string;
+            timestamp: number;
+            branch: string;
+            timeSpent: number;
+            timeBetweenCommits?: number;
+        }>;
+        branchSwitches: number;
+    } {
+        const entries = this.getEntriesForDateRange(startDate, endDate);
+        const branches: { [branchName: string]: number } = {};
+        const commitHistory: Array<{
+            commitHash: string;
+            timestamp: number;
+            branch: string;
+            timeSpent: number;
+            timeBetweenCommits?: number;
+        }> = [];
+        let totalCommits = 0;
+        let branchSwitches = 0;
+        let previousBranch: string | null = null;
+
+        for (const entry of entries) {
+            if (!entry.gitStats) {
+                continue;
+            }
+
+            const gitStats = entry.gitStats;
+            totalCommits += gitStats.commitCount || 0;
+
+            // Aggregate branch times
+            for (const [branchName, time] of Object.entries(gitStats.branchTime)) {
+                branches[branchName] = (branches[branchName] || 0) + time;
+            }
+
+            // Collect commit history
+            if (gitStats.commitHistory && gitStats.commitHistory.length > 0) {
+                for (const commit of gitStats.commitHistory) {
+                    commitHistory.push(commit);
+                    
+                    // Track branch switches
+                    if (previousBranch && previousBranch !== commit.branch) {
+                        branchSwitches++;
+                    }
+                    previousBranch = commit.branch;
+                }
+            } else if (gitStats.currentBranch) {
+                // Fallback for legacy data
+                if (previousBranch && previousBranch !== gitStats.currentBranch) {
+                    branchSwitches++;
+                }
+                previousBranch = gitStats.currentBranch;
+            }
+        }
+
+        // Sort commit history by timestamp
+        commitHistory.sort((a, b) => a.timestamp - b.timestamp);
+
+        return {
+            totalCommits,
+            branches,
+            commitHistory,
+            branchSwitches
+        };
     }
 }

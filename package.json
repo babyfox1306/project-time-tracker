@@ -2,7 +2,7 @@
   "name": "codeclock-time-tracker",
   "displayName": "CodeClock Time Tracker",
   "description": "Offline time tracker with Pomodoro timer and Git integration for VS Code developers",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "icon": "media/logo.png",
   "engines": {
     "vscode": "^1.74.0"
@@ -54,6 +54,11 @@
       {
         "command": "timeTracker.skipBreak",
         "title": "Skip Break",
+        "category": "Time Tracker"
+      },
+      {
+        "command": "timeTracker.viewGitStats",
+        "title": "View Git Analytics",
         "category": "Time Tracker"
       }
     ],

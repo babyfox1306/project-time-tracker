@@ -2,12 +2,15 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { StorageManager, TimeEntry } from './storage';
 import { formatTime, getRelativeFilePath, getTopFiles, getTopLanguages } from './utils';
+import { GitAnalytics } from './gitAnalytics';
 
 export class ReportGenerator {
     private storage: StorageManager;
+    private gitAnalytics: GitAnalytics;
 
     constructor(storage: StorageManager) {
         this.storage = storage;
+        this.gitAnalytics = new GitAnalytics(storage);
     }
 
     /**
@@ -17,6 +20,7 @@ export class ReportGenerator {
         const options = [
             { label: 'CSV Report', description: 'Export as CSV file for Excel', format: 'csv' },
             { label: 'Markdown Report', description: 'Export as Markdown file', format: 'markdown' },
+            { label: 'JSON Report', description: 'Export as JSON file with full metadata', format: 'json' },
             { label: 'Today Only', description: 'Export today\'s data only', format: 'today' },
             { label: 'Date Range', description: 'Export data for specific date range', format: 'range' }
         ];
@@ -35,7 +39,7 @@ export class ReportGenerator {
             } else if (selected.format === 'range') {
                 await this.exportDateRange();
             } else {
-                await this.exportAll(selected.format as 'csv' | 'markdown');
+                await this.exportAll(selected.format as 'csv' | 'markdown' | 'json');
             }
         } catch (error) {
             vscode.window.showErrorMessage(`Export failed: ${error}`);
@@ -55,9 +59,14 @@ export class ReportGenerator {
         const format = await this.chooseFormat();
         if (!format) return;
 
-        const content = format === 'csv' 
-            ? this.generateCSV([todayEntry])
-            : this.generateMarkdown([todayEntry]);
+        let content: string;
+        if (format === 'csv') {
+            content = this.generateCSV([todayEntry]);
+        } else if (format === 'markdown') {
+            content = this.generateMarkdown([todayEntry]);
+        } else {
+            content = this.generateJSON([todayEntry]);
+        }
 
         await this.saveReport(content, format, 'today');
     }
@@ -89,9 +98,14 @@ export class ReportGenerator {
         const format = await this.chooseFormat();
         if (!format) return;
 
-        const content = format === 'csv' 
-            ? this.generateCSV(entries)
-            : this.generateMarkdown(entries);
+        let content: string;
+        if (format === 'csv') {
+            content = this.generateCSV(entries);
+        } else if (format === 'markdown') {
+            content = this.generateMarkdown(entries);
+        } else {
+            content = this.generateJSON(entries);
+        }
 
         await this.saveReport(content, format, `${startDate}_to_${endDate}`);
     }
@@ -99,7 +113,7 @@ export class ReportGenerator {
     /**
      * Export all data
      */
-    private async exportAll(format: 'csv' | 'markdown'): Promise<void> {
+    private async exportAll(format: 'csv' | 'markdown' | 'json'): Promise<void> {
         const allData = this.storage.getAllData();
         const entries: TimeEntry[] = [];
 
@@ -114,9 +128,14 @@ export class ReportGenerator {
             return;
         }
 
-        const content = format === 'csv' 
-            ? this.generateCSV(entries)
-            : this.generateMarkdown(entries);
+        let content: string;
+        if (format === 'csv') {
+            content = this.generateCSV(entries);
+        } else if (format === 'markdown') {
+            content = this.generateMarkdown(entries);
+        } else {
+            content = this.generateJSON(entries);
+        }
 
         await this.saveReport(content, format, 'all');
     }
@@ -124,25 +143,32 @@ export class ReportGenerator {
     /**
      * Choose export format
      */
-    private async chooseFormat(): Promise<'csv' | 'markdown' | undefined> {
+    private async chooseFormat(): Promise<'csv' | 'markdown' | 'json' | undefined> {
         const format = await vscode.window.showQuickPick([
             { label: 'CSV', description: 'For Excel and data analysis' },
-            { label: 'Markdown', description: 'For documentation and sharing' }
+            { label: 'Markdown', description: 'For documentation and sharing' },
+            { label: 'JSON', description: 'For full metadata and programmatic access' }
         ], {
             placeHolder: 'Choose export format'
         });
 
-        return format?.label.toLowerCase() as 'csv' | 'markdown' | undefined;
+        return format?.label.toLowerCase() as 'csv' | 'markdown' | 'json' | undefined;
     }
 
     /**
      * Generate CSV content
      */
     private generateCSV(entries: TimeEntry[]): string {
-        const headers = ['Date', 'Project', 'File', 'Language', 'Time (seconds)', 'Time (formatted)'];
+        const headers = ['Date', 'Project', 'File', 'Language', 'Time (seconds)', 'Time (formatted)', 'Branch', 'Commit', 'Commit Timestamp'];
         const rows: string[] = [headers.join(',')];
 
         for (const entry of entries) {
+            const branch = entry.gitStats?.currentBranch || '';
+            const commit = entry.gitStats?.lastCommit || '';
+            const commitTimestamp = entry.gitStats?.commitTimestamp 
+                ? new Date(entry.gitStats.commitTimestamp).toISOString() 
+                : '';
+
             if (Object.keys(entry.files).length === 0) {
                 // No files tracked, add summary row
                 rows.push([
@@ -151,7 +177,10 @@ export class ReportGenerator {
                     'Total',
                     'All',
                     entry.totalSeconds.toString(),
-                    formatTime(entry.totalSeconds)
+                    formatTime(entry.totalSeconds),
+                    branch,
+                    commit,
+                    commitTimestamp
                 ].join(','));
             } else {
                 // Add individual file rows
@@ -162,7 +191,10 @@ export class ReportGenerator {
                         filePath,
                         fileData.language,
                         fileData.seconds.toString(),
-                        formatTime(fileData.seconds)
+                        formatTime(fileData.seconds),
+                        branch,
+                        commit,
+                        commitTimestamp
                     ].join(','));
                 }
             }
@@ -233,11 +265,176 @@ export class ReportGenerator {
                         }
                         lines.push('');
                     }
+
+                    // Git Analytics
+                    if (entry.gitStats) {
+                        lines.push('#### Git Analytics');
+                        lines.push(`**Current Branch:** ${entry.gitStats.currentBranch || 'N/A'}`);
+                        lines.push(`**Last Commit:** ${entry.gitStats.lastCommit || 'N/A'}`);
+                        lines.push(`**Commit Count:** ${entry.gitStats.commitCount || 0}`);
+                        
+                        if (entry.gitStats.commitTimestamp > 0) {
+                            const commitDate = new Date(entry.gitStats.commitTimestamp).toLocaleString();
+                            lines.push(`**Last Commit Timestamp:** ${commitDate}`);
+                        }
+                        
+                        // Branch breakdown
+                        const branchTimes = Object.entries(entry.gitStats.branchTime);
+                        if (branchTimes.length > 0) {
+                            lines.push('');
+                            lines.push('**Time by Branch:**');
+                            lines.push('| Branch | Time |');
+                            lines.push('|--------|------|');
+                            
+                            branchTimes
+                                .sort(([, a], [, b]) => b - a)
+                                .forEach(([branch, time]) => {
+                                    lines.push(`| ${branch} | ${formatTime(time)} |`);
+                                });
+                        }
+
+                        // Commit timeline
+                        if (entry.gitStats.commitHistory && entry.gitStats.commitHistory.length > 0) {
+                            lines.push('');
+                            lines.push('**Commit Timeline:**');
+                            lines.push('| Commit | Branch | Timestamp | Time Spent |');
+                            lines.push('|---------|--------|-----------|------------|');
+                            
+                            entry.gitStats.commitHistory
+                                .sort((a, b) => a.timestamp - b.timestamp)
+                                .forEach(commit => {
+                                    const date = new Date(commit.timestamp).toLocaleString();
+                                    lines.push(`| ${commit.commitHash.substring(0, 8)} | ${commit.branch} | ${date} | ${formatTime(commit.timeSpent)} |`);
+                                });
+                        }
+                        
+                        lines.push('');
+                    }
                 }
             }
         }
 
         return lines.join('\n');
+    }
+
+    /**
+     * Generate JSON content with full metadata
+     */
+    private generateJSON(entries: TimeEntry[]): string {
+        const report = {
+            exportDate: new Date().toISOString(),
+            totalEntries: entries.length,
+            entries: entries.map(entry => ({
+                date: entry.date,
+                projectName: entry.projectName,
+                totalSeconds: entry.totalSeconds,
+                totalTimeFormatted: formatTime(entry.totalSeconds),
+                files: Object.entries(entry.files).map(([filePath, fileData]) => ({
+                    filePath,
+                    language: fileData.language,
+                    seconds: fileData.seconds,
+                    timeFormatted: formatTime(fileData.seconds),
+                    lastActive: new Date(fileData.lastActive).toISOString()
+                })),
+                languages: entry.languages,
+                pomodoroStats: entry.pomodoroStats ? {
+                    totalWorkSessions: entry.pomodoroStats.totalWorkSessions,
+                    totalBreakSessions: entry.pomodoroStats.totalBreakSessions,
+                    lastSessionType: entry.pomodoroStats.lastSessionType,
+                    lastSessionEnd: entry.pomodoroStats.lastSessionEnd > 0 
+                        ? new Date(entry.pomodoroStats.lastSessionEnd).toISOString() 
+                        : null
+                } : null,
+                gitStats: entry.gitStats ? {
+                    currentBranch: entry.gitStats.currentBranch,
+                    lastCommit: entry.gitStats.lastCommit,
+                    commitTimestamp: entry.gitStats.commitTimestamp > 0 
+                        ? new Date(entry.gitStats.commitTimestamp).toISOString() 
+                        : null,
+                    branchTime: entry.gitStats.branchTime,
+                    commitCount: entry.gitStats.commitCount,
+                    commitHistory: entry.gitStats.commitHistory?.map(commit => ({
+                        commitHash: commit.commitHash,
+                        timestamp: new Date(commit.timestamp).toISOString(),
+                        branch: commit.branch,
+                        timeSpent: commit.timeSpent,
+                        timeSpentFormatted: formatTime(commit.timeSpent),
+                        timeBetweenCommits: commit.timeBetweenCommits 
+                            ? Math.floor(commit.timeBetweenCommits / 1000) 
+                            : null,
+                        timeBetweenCommitsFormatted: commit.timeBetweenCommits 
+                            ? formatTime(Math.floor(commit.timeBetweenCommits / 1000)) 
+                            : null
+                    })) || []
+                } : null
+            })),
+            gitAnalytics: this.generateGitAnalyticsJSON(entries)
+        };
+
+        return JSON.stringify(report, null, 2);
+    }
+
+    /**
+     * Generate Git analytics summary for JSON export
+     */
+    private generateGitAnalyticsJSON(entries: TimeEntry[]): any {
+        if (entries.length === 0) {
+            return null;
+        }
+
+        const startDate = entries[0].date;
+        const endDate = entries[entries.length - 1].date;
+        
+        const commits = this.gitAnalytics.getCommitTimeline(startDate, endDate);
+        const branchSwitching = this.gitAnalytics.getBranchSwitchingFrequency({
+            startDate,
+            endDate
+        });
+        const productivityStats = this.gitAnalytics.getGitProductivityStats({
+            startDate,
+            endDate
+        });
+
+        return {
+            dateRange: {
+                startDate,
+                endDate
+            },
+            productivityStats: {
+                totalCommits: productivityStats.totalCommits,
+                averageTimePerCommit: productivityStats.averageTimePerCommit,
+                averageTimePerCommitFormatted: formatTime(productivityStats.averageTimePerCommit),
+                totalTimeSpent: productivityStats.totalTimeSpent,
+                totalTimeSpentFormatted: formatTime(productivityStats.totalTimeSpent),
+                mostActiveBranch: productivityStats.mostActiveBranch,
+                branchSwitchCount: productivityStats.branchSwitchCount,
+                averageTimeBetweenCommits: productivityStats.averageTimeBetweenCommits,
+                averageTimeBetweenCommitsFormatted: formatTime(productivityStats.averageTimeBetweenCommits)
+            },
+            branchSwitching: {
+                switchCount: branchSwitching.switchCount,
+                averageTimeBetweenSwitches: branchSwitching.averageTimeBetweenSwitches,
+                averageTimeBetweenSwitchesFormatted: formatTime(branchSwitching.averageTimeBetweenSwitches),
+                switches: branchSwitching.switches.map(switchInfo => ({
+                    fromBranch: switchInfo.fromBranch,
+                    toBranch: switchInfo.toBranch,
+                    timestamp: new Date(switchInfo.timestamp).toISOString()
+                }))
+            },
+            commitTimeline: commits.map(commit => ({
+                commitHash: commit.commitHash,
+                timestamp: new Date(commit.timestamp).toISOString(),
+                branch: commit.branch,
+                timeSpent: commit.timeSpent,
+                timeSpentFormatted: formatTime(commit.timeSpent),
+                timeBetweenCommits: commit.timeBetweenCommits 
+                    ? Math.floor(commit.timeBetweenCommits / 1000) 
+                    : null,
+                timeBetweenCommitsFormatted: commit.timeBetweenCommits 
+                    ? formatTime(Math.floor(commit.timeBetweenCommits / 1000)) 
+                    : null
+            }))
+        };
     }
 
     /**
@@ -266,11 +463,18 @@ export class ReportGenerator {
         const fileName = `time-report-${scope}-${new Date().toISOString().split('T')[0]}.${format}`;
         const defaultUri = vscode.Uri.file(path.join(defaultPath, fileName));
 
+        const filters: { [key: string]: string[] } = {
+            [format.toUpperCase()]: [format]
+        };
+        
+        // Add JSON filter
+        if (format === 'json') {
+            filters['JSON'] = ['json'];
+        }
+
         const uri = await vscode.window.showSaveDialog({
             defaultUri: defaultUri,
-            filters: {
-                [format.toUpperCase()]: [format]
-            }
+            filters: filters
         });
 
         if (!uri) {
