@@ -2,6 +2,14 @@
 
 All notable changes to the "Project Time Tracker" extension will be documented in this file.
 
+## [0.1.2] - 2025-12-18
+
+### Improved
+- 📝 Enhanced marketplace description highlighting Git Analytics features
+- 🔍 Added new keywords: "git analytics", "commit timeline", "branch analytics", "git productivity"
+- 📊 Better discoverability for Git Analytics features on marketplace
+- ✨ Updated extension description to showcase commit timeline and productivity metrics
+
 ## [0.1.1] - 2025-01-21
 
 ### Improved

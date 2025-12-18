@@ -1,8 +1,8 @@
 {
   "name": "codeclock-time-tracker",
   "displayName": "CodeClock Time Tracker",
-  "description": "Offline time tracker with Pomodoro timer and Git integration for VS Code developers",
-  "version": "0.1.1",
+  "description": "Offline time tracker with Pomodoro timer, Git Analytics, and commit timeline visualization. Track time per branch, analyze productivity metrics, and export reports with full Git metadata.",
+  "version": "0.1.2",
   "icon": "media/logo.png",
   "engines": {
     "vscode": "^1.74.0"
@@ -142,6 +142,10 @@
     "focus timer",
     "developer productivity",
     "git tracking",
+    "git analytics",
+    "commit timeline",
+    "branch analytics",
+    "git productivity",
     "workflow management",
     "coding timer",
     "project management",
